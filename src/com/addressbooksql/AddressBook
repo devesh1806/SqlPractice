@@ -1,0 +1,215 @@
+/*UC1*/
+
+create database addressbook_service;
+show databases;
+ use addressbook_service;
+
+
+/*UC2*/
+
+create table address_book
+(
+id Int unsigned NOT NULL AUTO_INCREMENT,
+firstname Varchar(30) NOT NULL,
+lastname Varchar(30) NOT NULL,
+address Varchar(100) NOT NULL,
+city Varchar(20) NOT NULL,
+state Varchar(20) NOT NULL,
+zip Int NOT NULL,
+phonenumber BIGINT NOT NULL,
+email Varchar(30) NOT NULL,
+PRIMARY KEY (id)
+);
+
+
+/*UC3*/
+
+insert into address_book(firstname,lastname,address,city,state,zip,phonenumber,email) values
+('Devesh','Bhangale','Saidham Complex','Silvassa','DNH',396230,7506385338,'devesh1806@gmail.com'),
+('Devesh','Bhangale1','Saidham Complex','Vashi','Maharashtra',400706,7506385338,'devesh@gmail.com'),
+('Nikhil','Musale','Mani nagar','Nagpur','Maharashtra',440003,7522632568,'musalenikhil@gmail.com'),
+('Parag','Parashar','Mani nagar','Bandra','Maharashtra',400003,7522636568,'parag@gmail.com'),
+('Heema','Jetty','Mani nagar','Thane','Maharashtra',400003,7522896568,'heema@gmail.com');
+
+
+/*UC4*/
+
+update address_book set address = 'Shreerang Society' where firstname = 'Heema' and lastname = 'Jetty';
+update address_book set zip = 463207 where firstname = 'Parag' and lastname = 'Parashar';
+select * from address_book;
+
+
+/*UC5*/
+
+delete from address_book where firstname = 'Devesh' and lastname = 'Bhangale1';
+set @autoid := 0;
+update address_book set id = (@autoid := @autoid +1);
+select * from address_book;
+
+
+/*UC6*/
+
+select * from address_book where city = 'Silvassa';
+select * from address_book where state = 'Maharashtra';
+
+
+/*UC7*/
+
+select count(*) from address_book where city = 'Nagpur';
+select count(*) from address_book where city = 'Thane';
+select count(*) from address_book group by city;
+select count(*) from address_book group by state;
+select count(*) from address_book where state = 'Maharashtra';
+select count(*) from address_book where state = 'DNH';
+
+
+/*UC8*/
+
+select firstname,lastname from address_book where city='nagpur' order by city asc;
+select firstname,lastname,city from address_book order by city asc;
+
+
+/*UC9*/
+
+alter table address_book add type Varchar(20) NOT NULL;
+select * from address_book;
+update address_book set type = 'Profession' where firstname In('Parag','Heema');
+update address_book set type = 'Friend' where firstname = 'Nikhil';
+update address_book set type = 'Family' where firstname = 'Devesh';
+select * from address_book;
+
+
+/*UC10*/
+
+select type,count(*) from address_book where type = 'Profession';
+select type,count(*) from address_book where type = 'Family';
+
+
+/*UC11*/
+
+insert into address_book(firstname,lastname,address,city,state,zip,phonenumber,email,type) values
+('Deepak','Bhangale','Saidham Complex','Silvassa','DNH',396230,9720055877,'rambo@gmail.com','Family'),
+('Prakhar','Kansal','Pramukh Vihar','Silvassa','DNH',396230,9728956877,'ram@gmail.com','Friend');
+select * from address_book;
+
+
+/*UC12*/
+
+alter table address_book rename column id to person_id;
+create table address
+    -> (
+    -> person_id int unsigned not null,
+    -> residence_address varchar(250) not null,
+    -> city varchar(30) not null,
+    -> state varchar(30) not null,
+    -> zip int not null,
+    -> primary key(person_id),
+    -> foreign key(person_id) references address_book(person_id)
+    -> );
+create table relation_type
+    -> (
+    -> id int unsigned not null,
+    -> type varchar(30) not null,
+    -> primary key(id)
+    -> );
+alter table address_book rename to person_details;
+alter table person_details
+    -> drop column address,
+    -> drop column city,
+    -> drop column state,
+    -> drop column zip,
+    -> drop column type;
+insert into relation_type(id,type) values
+    -> (1,'Family'),
+    -> (2,'Friend'),
+    -> (3,'Profession');
+alter table address add country varchar(30) not null after state;
+insert into address(person_id,residence_address,city,state,country,zip) values
+    -> (1,'Saidham complex','Silvassa','DNH','India',396230),
+    -> (2,'mani nagar','Nagpur','Maharashtra','India',440003),
+    -> (3,'Sentosa Park Area','Bandra','Maharashtra','India',400003),
+    -> (4,'Vrindawan society','Thane','Maharashtra','India',400201),
+    -> (5,'Saidham complex','Silvassa','DNH','India',396230),
+    -> (6,'Pramukh Vihar','Silvassa','DNH','India',396230);
+alter table relation_type rename column id to relation_id;
+create table address_book
+    -> (
+    -> person_id int unsigned not null,
+    -> id int unsigned not null,
+    -> primary key(person_id,id),
+    -> foreign key(person_id) references person_details(person_id),
+    -> foreign key(id) references relation_type(relation_id));
+insert into address_book(person_id,relation_id) values
+    -> (1,1),
+    -> (2,2),
+    -> (3,3),
+    -> (4,3),
+    -> (5,1),
+    -> (6,2);
+
+
+
+/*UC13*/
+
+select p.firstname,p.lastname,p.phonenumber,p.email,a.residence_address,a.city,a.state,a.country,a.zip,r.type
+    -> from address a,address_book ab,person_details p,relation_type r
+    -> where ab.person_id = p.person_id
+    -> and ab.relation_id = r.relation_id
+    -> and p.person_id = a.person_id
+    -> and state = "Maharashtra";
++-----------+----------+-------------+------------------------+-------------------+--------+-------------+---------+--------+------------+
+| firstname | lastname | phonenumber | email                  | residence_address | city   | state       | country | zip    | type       |
++-----------+----------+-------------+------------------------+-------------------+--------+-------------+---------+--------+------------+
+| Nikhil    | Musale   |  7522632568 | musalenikhil@gmail.com | mani nagar        | Nagpur | Maharashtra | India   | 440003 | Friend     |
+| Parag     | Parashar |  7522636568 | parag@gmail.com        | Sentosa Park Area | Bandra | Maharashtra | India   | 400003 | Profession |
+| Heema     | Jetty    |  7522896568 | heema@gmail.com        | Vrindawan society | Thane  | Maharashtra | India   | 400201 | Profession |
++-----------+----------+-------------+------------------------+-------------------+--------+-------------+---------+--------+------------+
+
+select a.state,count(*)
+    -> from address a,person_details p
+    -> where p.person_id = a.person_id
+    -> and state = "Maharashtra";
++-------------+----------+
+| state       | count(*) |
++-------------+----------+
+| Maharashtra |        3 |
++-------------+----------+
+
+select a.state,count(*)
+    -> from address a,person_details p
+    -> where p.person_id = a.person_id
+    -> and state = "DNH"
+    -> and city = "Silvassa";
++-------+----------+
+| state | count(*) |
++-------+----------+
+| DNH   |        3 |
++-------+----------+
+
+select p.firstname,p.lastname,p.phonenumber,p.email,a.residence_address,a.city,a.state,a.country,a.zip,r.type
+    -> from address a,address_book ab,person_details p,relation_type r
+    -> where ab.person_id = p.person_id
+    -> and ab.relation_id = r.relation_id
+    -> and p.person_id = a.person_id
+    -> and city = "Silvassa"
+    -> order by p.firstname;
++-----------+----------+-------------+----------------------+-------------------+----------+-------+---------+--------+--------+
+| firstname | lastname | phonenumber | email                | residence_address | city     | state | country | zip    | type   |
++-----------+----------+-------------+----------------------+-------------------+----------+-------+---------+--------+--------+
+| Deepak    | Bhangale |  9720055877 | rambo@gmail.com      | Saidham complex   | Silvassa | DNH   | India   | 396230 | Family |
+| Devesh    | Bhangale |  7506385338 | devesh1806@gmail.com | Saidham complex   | Silvassa | DNH   | India   | 396230 | Family |
+| Prakhar   | Kansal   |  9728956877 | ram@gmail.com        | Pramukh Vihar     | Silvassa | DNH   | India   | 396230 | Friend |
++-----------+----------+-------------+----------------------+-------------------+----------+-------+---------+--------+--------+
+
+select r.type,count(*)
+    -> from address_book ab,person_details p,relation_type r
+    -> where ab.person_id = p.person_id
+    -> and ab.relation_id = r.relation_id
+    -> group by r.type;
++------------+----------+
+| type       | count(*) |
++------------+----------+
+| Family     |        2 |
+| Friend     |        2 |
+| Profession |        2 |
++------------+----------+

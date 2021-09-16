@@ -1,0 +1,250 @@
+/*UC1*/
+
+show databases;
+create database payroll_service;
+show databases;
+use payroll_service; 
+
+
+/*UC2*/
+
+create table employee_payroll
+(
+id Int unsigned NOT NULL AUTO_INCREMENT,
+name Varchar(30) NOT NULL,
+salary Double NOT NULL,
+start Date NOT NULL,
+PRIMARY KEY (id)
+);
+
+
+/*UC3*/
+
+insert into employee_payroll (name,salary,start) values
+('Bill',100000.00,'2018-01-03'),
+('Charlie',200000.00,'2019-03-15'),
+('Anna',300000.00,'2020-04-23');
+
+
+/*UC4*/
+
+select * from employee_payroll;
+
+
+/*UC5*/
+
+select salary from employee_payroll where name = 'Bill';
+select salary from employee_payroll where start between CAST('2018-01-01' as Date) AND Date(now());
+
+
+/*UC6*/
+
+Alter table employee_payroll Add gender char(1) NOT NULL;
+update employee_payroll set gender = 'F' where name = 'Anna';
+update employee_payroll set gender = 'M' where name != 'Anna';
+
+
+/*UC7*/
+
+select gender,sum(salary) from employee_payroll group by gender;
+select gender,avg(salary) from employee_payroll group by gender;
+select gender,min(salary) from employee_payroll group by gender;
+select gender,max(salary) from employee_payroll group by gender;
+select gender,count(salary) from employee_payroll group by gender;
+
+
+/*UC8*/
+
+alter table employee_payroll add phone_number BIGINT after name;
+alter table employee_payroll add department varchar(30) NOT NULL after phone_number ;
+alter table employee_payroll add address varchar(30) after phone_number;
+alter table employee_payroll alter address set default 'TBD';
+
+
+/*UC9*/
+
+alter table employee_payroll RENAME column salary to basic_pay;
+alter table employee_payroll add deductions double NOT NULL after basic_pay;
+alter table employee_payroll add taxable_pay double NOT NULL after deductions;
+alter table employee_payroll add income_tax double NOT NULL after taxable_pay;
+alter table employee_payroll add net_pay double NOT NULL after income_tax;
+
+/*UC10*/
+
+//different name was stored so change of name
+update employee_payroll set name = "Terissa" where name = "Anna"; 
+update employee_payroll set department = "Sales" where name = "Terissa";
+insert into employee_payroll(name,department,basic_pay,deductions,taxable_pay,income_tax,net_pay,start,gender) values
+('Terissa','Marketing',582658.00,50000.00,532658.00,25000,632589.00,'2020-03-03','F');
+select * from employee_payroll where name = 'Terissa';
+
+
+/*UC11*/
+
+alter table employee_payroll drop column department,
+    -> drop column basic_pay,
+    -> drop column taxable_pay,
+    -> drop column net_pay,
+    -> drop column deductions,
+    -> drop column income_tax,
+    -> drop column address;
+alter table employee_payroll rename column id to emp_id;
+create table department
+    -> (
+    -> dept_id Int not null auto_increment,
+    -> dept_name varchar(30) not null,
+    -> Primary key(dept_id)
+    -> );
+create table address
+    -> (
+    -> emp_id int unsigned not null,
+    -> residence_address varchar(250) not null,
+    -> city varchar(30) not null,
+    -> state varchar(30) not null,
+    -> country varchar(30) not null,
+    -> zip int not null,
+    -> primary key (emp_id),
+    -> Foreign key (emp_id) references employee_payroll(emp_id)
+    -> );
+create table payroll
+    -> (
+    -> emp_id int unsigned not null,
+    -> basic_pay double not null,
+    -> deductions double not null,
+    -> taxable_pay double not null,
+    -> income_tax double not null,
+    -> net_pay double not null,
+    -> Primary key(emp_id),
+    -> Foreign key(emp_id) references employee_payroll(emp_id)
+    -> );
+create table company
+    -> (
+    -> emp_id int unsigned not null,
+    -> dept_id int not null,
+    -> Primary key(emp_id,dept_id),
+    -> Foreign key(emp_id) references employee_payroll(emp_id),
+    -> Foreign key(dept_id) references department(dept_id)
+    -> );
+alter table employee_payroll rename to employee;
+insert into department(dept_id,dept_name) values
+    -> (1,'Finance'),
+    -> (2,'Sales'),
+    -> (3,'Marketing'),
+    -> (4,'IT');
+show tables;
++---------------------------+
+| Tables_in_payroll_service |
++---------------------------+
+| address                   |
+| company                   |
+| department                |
+| employee                  |
+| payroll                   |
++---------------------------+
+insert into company (emp_id,dept_id) values
+    -> (1,1),
+    -> (2,4),
+    -> (3,2),
+    -> (4,3);
+insert into payroll (emp_id,basic_pay,deductions,taxable_pay,income_tax,net_pay) values
+    -> (1,2359856.00,89563.00,228962.00,569166.00,3100000.00),
+    -> (2,2356656.00,89563.00,295262.00,598166.00,3650000.00),
+    -> (3,23566.00,8953.00,5262.00,5166.00,1110000.00),
+    -> (4,2352366.00,895453.00,52662.00,51686.00,1119000.00);
+insert into address(emp_id,residence_address,city,state,country,zip) values
+    -> (1,'Saidham complex','sil','manmad','India',396230),
+    -> (2,'Mira nagar','Nagpur','Maharashtra','India',389230),
+    -> (3,'Shanta nagar','Bandra','Maharashtra','India',389963),
+    -> (4,'Shanta nagar','Bandra','Maharashtra','India',389963);
+
+
+
+/*UC12*/
+
+select e.name,e.phone_number,e.start,e.gender,d.dept_name,a.residence_address,a.city,a.state,a.country,a.zip, p.basic_pay,p.taxable_pay,p.income_tax,p.net_pay
+    -> from employee e,department d,address a,payroll p,company c
+    -> where c.emp_id = e.emp_id
+    -> and c.dept_id = d.dept_id
+    -> and a.emp_id = e.emp_id
+    -> and p.emp_id = e.emp_id;
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+| name    | phone_number | start      | gender | dept_name | residence_address | city   | state       | country | zip    | basic_pay | taxable_pay | income_tax | net_pay |
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+| Bill    |         NULL | 2018-01-03 | M      | Finance   | Saidham complex   | sil    | manmad      | India   | 396230 |   2359856 |      228962 |     569166 | 3100000 |
+| Charlie |         NULL | 2019-03-15 | M      | IT        | Mira nagar        | Nagpur | Maharashtra | India   | 389230 |   2356656 |      295262 |     598166 | 3650000 |
+| Terissa |         NULL | 2020-04-23 | F      | Sales     | Shanta nagar      | Bandra | Maharashtra | India   | 389963 |     23566 |        5262 |       5166 | 1110000 |
+| Terissa |         NULL | 2020-03-03 | F      | Marketing | Shanta nagar      | Bandra | Maharashtra | India   | 389963 |   2352366 |       52662 |      51686 | 1119000 |
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+
+select e.name,e.phone_number,e.start,e.gender,d.dept_name,a.residence_address,a.city,a.state,a.country,a.zip, p.basic_pay,p.taxable_pay,p.income_tax,p.net_pay
+    -> from employee e,department d,address a,payroll p,company c
+    -> where c.emp_id = e.emp_id
+    -> and c.dept_id = d.dept_id
+    -> and a.emp_id = e.emp_id
+    -> and p.emp_id = e.emp_id
+    -> and e.name = 'Bill';
++------+--------------+------------+--------+-----------+-------------------+------+--------+---------+--------+-----------+-------------+------------+---------+
+| name | phone_number | start      | gender | dept_name | residence_address | city | state  | country | zip    | basic_pay | taxable_pay | income_tax | net_pay |
++------+--------------+------------+--------+-----------+-------------------+------+--------+---------+--------+-----------+-------------+------------+---------+
+| Bill |         NULL | 2018-01-03 | M      | Finance   | Saidham complex   | sil  | manmad | India   | 396230 |   2359856 |      228962 |     569166 | 3100000 |
++------+--------------+------------+--------+-----------+-------------------+------+--------+---------+--------+-----------+-------------+------------+---------+
+
+select e.name,e.phone_number,e.start,e.gender,d.dept_name,a.residence_address,a.city,a.state,a.country,a.zip, p.basic_pay,p.taxable_pay,p.income_tax,p.net_pay
+    -> from employee e,department d,address a,payroll p,company c
+    -> where c.emp_id = e.emp_id
+    -> and c.dept_id = d.dept_id
+    -> and a.emp_id = e.emp_id
+    -> and p.emp_id = e.emp_id
+    -> and e.start between Date('2018-01-01') and Date('2021-12-31');
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+| name    | phone_number | start      | gender | dept_name | residence_address | city   | state       | country | zip    | basic_pay | taxable_pay | income_tax | net_pay |
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+| Bill    |         NULL | 2018-01-03 | M      | Finance   | Saidham complex   | sil    | manmad      | India   | 396230 |   2359856 |      228962 |     569166 | 3100000 |
+| Charlie |         NULL | 2019-03-15 | M      | IT        | Mira nagar        | Nagpur | Maharashtra | India   | 389230 |   2356656 |      295262 |     598166 | 3650000 |
+| Terissa |         NULL | 2020-04-23 | F      | Sales     | Shanta nagar      | Bandra | Maharashtra | India   | 389963 |     23566 |        5262 |       5166 | 1110000 |
+| Terissa |         NULL | 2020-03-03 | F      | Marketing | Shanta nagar      | Bandra | Maharashtra | India   | 389963 |   2352366 |       52662 |      51686 | 1119000 |
++---------+--------------+------------+--------+-----------+-------------------+--------+-------------+---------+--------+-----------+-------------+------------+---------+
+
+select e.gender,sum(p.basic_pay),sum(p.taxable_pay),sum(p.income_tax),sum(p.net_pay)
+    -> from employee e,payroll p
+    -> where e.emp_id = p.emp_id
+    -> group by gender;
++--------+------------------+--------------------+-------------------+----------------+
+| gender | sum(p.basic_pay) | sum(p.taxable_pay) | sum(p.income_tax) | sum(p.net_pay) |
++--------+------------------+--------------------+-------------------+----------------+
+| M      |          4716512 |             524224 |           1167332 |        6750000 |
+| F      |          2375932 |              57924 |             56852 |        2229000 |
++--------+------------------+--------------------+-------------------+----------------+
+
+select e.gender,avg(p.basic_pay),avg(p.taxable_pay),avg(p.income_tax),avg(p.net_pay)
+    -> from employee e,payroll p
+    -> where e.emp_id = p.emp_id
+    -> group by gender;
++--------+------------------+--------------------+-------------------+----------------+
+| gender | avg(p.basic_pay) | avg(p.taxable_pay) | avg(p.income_tax) | avg(p.net_pay) |
++--------+------------------+--------------------+-------------------+----------------+
+| M      |          2358256 |             262112 |            583666 |        3375000 |
+| F      |          1187966 |              28962 |             28426 |        1114500 |
++--------+------------------+--------------------+-------------------+----------------+
+
+select e.gender,min(p.basic_pay),min(p.taxable_pay),min(p.income_tax),min(p.net_pay)
+    -> from employee e,payroll p
+    -> where e.emp_id = p.emp_id
+    -> group by gender;
++--------+------------------+--------------------+-------------------+----------------+
+| gender | min(p.basic_pay) | min(p.taxable_pay) | min(p.income_tax) | min(p.net_pay) |
++--------+------------------+--------------------+-------------------+----------------+
+| M      |          2356656 |             228962 |            569166 |        3100000 |
+| F      |            23566 |               5262 |              5166 |        1110000 |
++--------+------------------+--------------------+-------------------+----------------+
+
+select e.gender,max(p.basic_pay),max(p.taxable_pay),max(p.income_tax),max(p.net_pay)
+    -> from employee e,payroll p
+    -> where e.emp_id = p.emp_id
+    -> group by gender;
++--------+------------------+--------------------+-------------------+----------------+
+| gender | max(p.basic_pay) | max(p.taxable_pay) | max(p.income_tax) | max(p.net_pay) |
++--------+------------------+--------------------+-------------------+----------------+
+| M      |          2359856 |             295262 |            598166 |        3650000 |
+| F      |          2352366 |              52662 |             51686 |        1119000 |
++--------+------------------+--------------------+-------------------+----------------+
